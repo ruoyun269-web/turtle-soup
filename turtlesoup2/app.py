@@ -4,18 +4,21 @@ from google import genai
 import time
 
 # =====================================================================
-# 1. 初始化與金鑰設定（安全部署版：優先讀取雲端環境變數）
+# 1. 初始化與金鑰設定（完美兼容版：本機自動保底，雲端安全讀取）
 # =====================================================================
 if "api_key" not in st.session_state:
-    # 優先從系統環境變數中讀取 GEMINI_API_KEY
-    st.session_state.api_key = os.environ.get("GEMINI_API_KEY", "")
+    # 優先讀取雲端平台的環境變數
+    cloud_key = os.environ.get("GEMINI_API_KEY", "")
     
-    # 💡 提示：如果要在本地端自己電腦測試，可以取消下一行的註解並填入 Key：
-    # st.session_state.api_key = "AIzaSyApMJuBS5OYvGPYOLFcrV-CSVWD1OsPiLo"
+    if cloud_key:
+        st.session_state.api_key = cloud_key
+    else:
+        # 💡 如果雲端拿不到環境變數（代表在本機電腦測試），自動啟用此測試金鑰
+        st.session_state.api_key = "AIzaSyApMJuBS5OYvGPYOLFcrV-CSVWD1OsPiLo"
 
-# 如果雲端和本地都拿不到 Key，則中斷並提示（Streamlit 部署安全控管）
+# 如果雲端和本地都拿不到任何 Key，則中斷並提示
 if not st.session_state.api_key:
-    st.warning("⚠️ 系統未偵測到 API 金鑰！請於雲端平台（如 Streamlit Secrets）設定 GEMINI_API_KEY 環境變數。")
+    st.warning("⚠️ 系統未偵測到 API 金鑰！請確認金鑰配置狀態。")
     st.stop()
 
 # 初始化歷史對話紀錄（符合 Streamlit 狀態管理，打包上下文用）
@@ -50,7 +53,7 @@ st.set_page_config(page_title="AI 海龜湯攻防戰", layout="centered")
 st.title("🐢 AI 海龜湯攻防戰 —— 提示注入防禦系統")
 st.caption("2026學年度 期末專題專用版 | 藍軍絕對防禦部署")
 
-# 🔒 進攻組對抗賽模式：已將後台監控隱藏，若你自己測試需要看答案，把下面兩行取消註解即可
+# 🔒 進攻組對抗賽模式：已將後台監控隱藏。若你自己測試需要看答案，把下面兩行取消註解即可
 # with st.expander("🔍 藍軍後端監控（防守方看得到，謎底已被保護）"):
 #     st.write(f"目前系統秘密生成的謎底為：**{st.session_state.secret_answer}**")
 
