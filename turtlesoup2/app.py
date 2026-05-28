@@ -4,22 +4,10 @@ from google import genai
 import time
 
 # =====================================================================
-# 1. 初始化與金鑰設定（完美兼容版：本機自動保底，雲端安全讀取）
+# 1. 初始化與金鑰設定（直接寫死全新金鑰，確保雲端 100% 正常讀取）
 # =====================================================================
-if "api_key" not in st.session_state:
-    # 優先讀取雲端平台的環境變數
-    cloud_key = os.environ.get("GEMINI_API_KEY", "")
-    
-    if cloud_key:
-        st.session_state.api_key = cloud_key
-    else:
-        # 💡 如果雲端拿不到環境變數（代表在本機電腦測試），自動啟用此測試金鑰
-        st.session_state.api_key = "AIzaSyApMJuBS5OYvGPYOLFcrV-CSVWD1OsPiLo"
-
-# 如果雲端和本地都拿不到任何 Key，則中斷並提示
-if not st.session_state.api_key:
-    st.warning("⚠️ 系統未偵測到 API 金鑰！請確認金鑰配置狀態。")
-    st.stop()
+# 🔑 已更換為你提供的最新 Gemini API 金鑰
+st.session_state.api_key = "AIzaSyCDMf638xST-z4Z5jAYiqAvmoLqJHq8Frk"
 
 # 初始化歷史對話紀錄
 if "messages" not in st.session_state:
@@ -53,6 +41,7 @@ if prompt := st.chat_input("請輸入你的提問（限 50 字內，設有 1 秒
     time.sleep(1)
     
     # 渲染並儲存使用者的提問
+    st.session_state.append_message = {"role": "user", "content": prompt}
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
@@ -92,18 +81,4 @@ if prompt := st.chat_input("請輸入你的提問（限 50 字內，設有 1 秒
         ai_response = response.text.strip()
 
         # =====================================================================
-        # 6. 【藍軍核心】後端 Python 物理攔截（最強硬防禦）
-        # =====================================================================
-        # 攔截點 A：如果 AI 被破解吐出一長串解釋（字數 > 15），直接沒收。
-        # 攔截點 B：如果 AI 回覆不幸包含了謎底關鍵字「香蕉」，直接抽換。
-        if len(ai_response) > 15 or st.session_state.secret_answer in ai_response:
-            ai_response = "與故事/題目無關。"
-
-    except Exception as e:
-        # 💡 完美防禦：若 API 流量爆量（429 錯誤），直接優雅地回傳標準海龜湯答覆，不暴露技術細節
-        ai_response = "與故事/題目無關。"
-
-    # 渲染並儲存 AI 的回應到歷史紀錄中
-    st.session_state.messages.append({"role": "assistant", "content": ai_response})
-    with st.chat_message("assistant"):
-        st.write(ai_response)
+        # 6. 【藍軍核心】後端
