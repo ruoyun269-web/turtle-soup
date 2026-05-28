@@ -18,22 +18,21 @@ if "messages" not in st.session_state:
 # =====================================================================
 if "secret_answer" not in st.session_state or st.session_state.secret_answer is None:
     try:
-        # 🔐 藍軍秘密對抗賽題目庫（你可以自由修改、增加裡面的詞彙，完全符合系統自動秘密抽題規格）
+        # 🔐 藍軍秘密對抗賽題目庫（完全符合系統自動秘密抽題規格）
         pool = ["草莓", "西瓜", "腳踏車", "計算機", "珍珠奶茶", "排球", "筆記本", "吹風機", "青蘋果"]
         
-        # 抓取今天現場的日期種子（例如：20260528），確保今天全班所有人連進來算出來的數字都一模一樣！
+        # 抓取今天現場的日期種子（確保今天全班所有人連進來算出來的數字都一模一樣）
         day_seed = int(datetime.datetime.now().strftime("%Y%m%d"))
         
         # 用數學餘數定理強迫定錨同一個索引，達成 100% 跨設備絕對同步
         target_index = day_seed % len(pool)
         st.session_state.secret_answer = pool[target_index]
     except Exception as e:
-        st.session_state.secret_answer = "西瓜"  # 保底防護
+        st.session_state.secret_answer = "吹風機"  # 保底防護
 
 # =====================================================================
 # 🔐 藍軍特權核心：網址秘密參數自動識別機制（免打字、防外洩）
 # =====================================================================
-# 自動讀取網址列後方的參數。當網址最後面加上了 `/?role=admin`，系統就會判定你為關主！
 query_params = st.query_params
 if query_params.get("role") == "admin":
     st.session_state.is_admin = True
@@ -47,7 +46,7 @@ st.set_page_config(page_title="AI 海龜湯攻防戰", layout="centered")
 st.title("🐢 AI 海龜湯攻防戰 —— 提示注入防禦系統")
 st.caption("2026學年度 期末專題專用版 | 藍軍絕對防禦部署")
 
-# 🔒 只有你的專屬網址後綴符合，網頁頂端才會自動彈出這個關主面板！其他同學連進來完全看不到這個組件！
+# 🔒 只有你的專屬網址後綴符合，網頁頂端才會自動彈出這個關主面板！
 if st.session_state.is_admin:
     st.success(f"👑 **關主自動識別成功！後端即時監控中** ｜ 當前局動態謎底為：**{st.session_state.secret_answer}**")
 
@@ -102,23 +101,28 @@ if prompt := st.chat_input("請輸入你的提問（限 50 字內，設有 1 秒
             config={"system_instruction": system_instruction}
         )
         
-        ai_response = response.text.strip().replace("「", "").replace("」", "").replace("『", "").replace("』", "")
+        # 去除常見的標點符號與前後空白，進行去雜訊預處理
+        ai_response = response.text.strip().replace("「", "").replace("」", "").replace("『", "").replace("』", "").replace("。", "")
 
         # =====================================================================
-        # 6. 【藍軍核心】後端 Python 物理攔截
+        # 6. 【藍軍核心】後端 Python 物理優化攔截（模糊去雜訊比對）
         # =====================================================================
-        # 攔截點 A：如果 AI 回覆中包含了這次動態生成的秘密謎底，直接抽換，保證進攻方絕對拿不到明文！
-        # 攔截點 B：如果 AI 智商下線被話術破防吐出一長串解釋（字數 > 10），直接物理沒收
-        if len(ai_response) > 10 or st.session_state.secret_answer in ai_response:
+        # 核心防禦：如果 AI 被注入話術破防吐出一長串解釋（字數 > 10），直接物理沒收
+        if len(ai_response) > 10:
             ai_response = "與故事/題目無關。"
-            
-        # 攔截點 C：確保回應字樣百分之百完全符合規格書規规定的四種答案之一
-        valid_answers = ["是", "不是", "與故事/題目無關", "不完全是"]
-        if ai_response not in valid_answers:
+        
+        # 破關防呆判定：只要 AI 回應中「包含」了 "是"（例如: 是的、是啊、是。），且不包含負面詞「不」
+        # 我們就強行幫 AI 洗白校正成標準的「是」，確保玩家猜對時能正常破關！
+        if "是" in ai_response and "不" not in ai_response:
+            ai_response = "是"
+        elif "不" in ai_response and "完全" not in ai_response:
+            ai_response = "不是"
+        elif "不完全" in ai_response:
+            ai_response = "不完全是"
+        else:
             ai_response = "與故事/題目無關。"
 
     except Exception as e:
-        # 流量超限安全中斷防禦：現場如果爆量，自動隱蔽錯誤，回傳標準答覆
         ai_response = "與故事/題目無關。"
 
     # 渲染並儲存 AI 的回應到歷史紀錄中
