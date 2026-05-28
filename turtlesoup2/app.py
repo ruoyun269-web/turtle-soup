@@ -26,7 +26,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # =====================================================================
-# 2. 規格要求：謎底牢牢鎖死為【香蕉】（前端零組件，絕對防禦外洩）
+# 2. 規格要求：謎底鎖死為【香蕉】（前端無任何組件，進攻方絕對無法抓包）
 # =====================================================================
 st.session_state.secret_answer = "香蕉"
 
@@ -96,4 +96,14 @@ if prompt := st.chat_input("請輸入你的提問（限 50 字內，設有 1 秒
         # =====================================================================
         # 攔截點 A：如果 AI 被破解吐出一長串解釋（字數 > 15），直接沒收。
         # 攔截點 B：如果 AI 回覆不幸包含了謎底關鍵字「香蕉」，直接抽換。
-        if len(ai_response) >
+        if len(ai_response) > 15 or st.session_state.secret_answer in ai_response:
+            ai_response = "與故事/題目無關。"
+
+    except Exception as e:
+        # 💡 完美防禦：若 API 流量爆量（429 錯誤），直接優雅地回傳標準海龜湯答覆，不暴露技術細節
+        ai_response = "與故事/題目無關。"
+
+    # 渲染並儲存 AI 的回應到歷史紀錄中
+    st.session_state.messages.append({"role": "assistant", "content": ai_response})
+    with st.chat_message("assistant"):
+        st.write(ai_response)
